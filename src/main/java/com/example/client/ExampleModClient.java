@@ -1,5 +1,6 @@
 package com.example.client;
 
+import com.example.SecondPlayerManager;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import org.lwjgl.glfw.GLFW;
@@ -20,6 +21,7 @@ public class ExampleModClient implements ClientModInitializer {
                         if (startPressed && !splitScreenActive) {
                             splitScreenActive = true;
                             System.out.println("2. Oyuncu katıldı! Ekran bölünüyor...");
+                            SecondPlayerManager.spawnPlayer2(client.getServer());
                         }
                     }
                 }
