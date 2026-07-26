@@ -11,8 +11,10 @@ import org.joml.Matrix4f;
 
 public class SplitScreenRenderer {
 
-    // 2. görüntü için ayrı bir kamera nesnesi (şimdilik test amaçlı 1. oyuncuyla aynı yerden bakıyor)
     private static final Camera secondCamera = new Camera();
+
+    // Sonsuz döngüyü önlemek için: ikinci render sırasında bu true olacak
+    private static boolean renderingSecondView = false;
 
     public static void init() {
         HudRenderCallback.EVENT.register((context, tickDelta) -> {
@@ -22,8 +24,15 @@ public class SplitScreenRenderer {
         });
 
         WorldRenderEvents.END.register(context -> {
-            if (ExampleModClient.splitScreenActive) {
+            // Eğer şu an zaten ikinci görüntüyü çiziyorsak, tekrar tetiklenmeyi engelle
+            if (renderingSecondView) return;
+            if (!ExampleModClient.splitScreenActive) return;
+
+            renderingSecondView = true;
+            try {
                 renderSecondViewport(context.tickDelta());
+            } finally {
+                renderingSecondView = false;
             }
         });
     }
@@ -37,10 +46,8 @@ public class SplitScreenRenderer {
         int width = client.getWindow().getFramebufferWidth();
         int height = client.getWindow().getFramebufferHeight();
 
-        // Test amaçlı: şimdilik 1. oyuncunun kendi konumundan bakıyoruz
         secondCamera.update(client.world, client.player, false, false, tickDelta);
 
-        // Ekranın ALT yarısına sıkıştırıyoruz
         RenderSystem.viewport(0, 0, width, height / 2);
 
         Matrix4f projectionMatrix = client.gameRenderer.getBasicProjectionMatrix(70.0);
@@ -57,7 +64,6 @@ public class SplitScreenRenderer {
                 projectionMatrix
         );
 
-        // Görüntü alanını eski haline getiriyoruz, yoksa üst yarı de bozulur
         RenderSystem.viewport(0, 0, width, height);
     }
 
@@ -67,7 +73,6 @@ public class SplitScreenRenderer {
         int screenHeight = client.getWindow().getScaledHeight();
         int middleY = screenHeight / 2;
 
-        // Artık yatay çizgi çiziyoruz (üst/alt bölünme için)
         context.fill(0, middleY - 1, screenWidth, middleY + 1, 0xFFFFFFFF);
     }
 }
