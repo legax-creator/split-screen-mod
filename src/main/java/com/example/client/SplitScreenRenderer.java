@@ -43,7 +43,7 @@ public class SplitScreenRenderer {
             return;
         }
 
-        // 2. oyuncu doğduysa onu, doğmadıysa (henüz) 1. oyuncuyu göster
+        // 2. oyuncu dogduysa onu, dogmadiysa (henuz) 1. oyuncuyu goster
         Entity focusEntity = SecondPlayerManager.player2 != null ? SecondPlayerManager.player2 : client.player;
 
         int width = client.getWindow().getFramebufferWidth();
