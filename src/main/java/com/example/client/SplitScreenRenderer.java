@@ -1,5 +1,6 @@
 package com.example.client;
 
+import com.example.SecondPlayerManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
@@ -7,6 +8,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
 
@@ -41,10 +43,13 @@ public class SplitScreenRenderer {
             return;
         }
 
+        // 2. oyuncu doğduysa onu, doğmadıysa (henüz) 1. oyuncuyu göster
+        Entity focusEntity = SecondPlayerManager.player2 != null ? SecondPlayerManager.player2 : client.player;
+
         int width = client.getWindow().getFramebufferWidth();
         int halfHeight = client.getWindow().getFramebufferHeight() / 2;
 
-        secondCamera.update(client.world, client.player, false, false, tickDelta);
+        secondCamera.update(client.world, focusEntity, false, false, tickDelta);
 
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
         GL11.glScissor(0, 0, width, halfHeight);
@@ -52,7 +57,6 @@ public class SplitScreenRenderer {
         RenderSystem.viewport(0, 0, width, halfHeight);
         RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, false);
 
-        // Aspect oranını, gerçek (yarım yükseklikteki) viewport'a göre kendimiz hesaplıyoruz
         float aspect = (float) width / (float) halfHeight;
         Matrix4f projectionMatrix = new Matrix4f().perspective(
                 (float) Math.toRadians(70.0),
