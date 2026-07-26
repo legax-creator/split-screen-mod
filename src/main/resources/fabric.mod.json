@@ -4,9 +4,7 @@
     "version": "${version}",
     "name": "Split Screen",
     "description": "İki kişi aynı ekranda oynasın diye yapılan mod",
-    "authors": [
-        "legax-creator"
-    ],
+    "authors": ["legax-creator"],
     "contact": {
         "homepage": "https://fabricmc.net/",
         "sources": "https://github.com/legax-creator/split-screen-mod"
@@ -15,24 +13,13 @@
     "icon": "assets/modid/icon.png",
     "environment": "*",
     "entrypoints": {
-        "main": [
-            "com.example.ExampleMod"
-        ],
-        "client": [
-            "com.example.client.ExampleModClient"
-        ]
+        "main": ["com.example.ExampleMod"],
+        "client": ["com.example.client.ExampleModClient"]
     },
-    "mixins": [
-        "modid.mixins.json",
-        {
-            "config": "modid.client.mixins.json",
-            "environment": "client"
-        }
-    ],
     "depends": {
-        "fabricloader": ">=0.19.3",
-        "minecraft": "~26.1.2",
-        "java": ">=25",
+        "fabricloader": ">=0.15.11",
+        "minecraft": "~1.20.1",
+        "java": ">=17",
         "fabric-api": "*"
     }
 }
