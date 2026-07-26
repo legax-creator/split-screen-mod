@@ -13,8 +13,6 @@ import org.lwjgl.opengl.GL11;
 public class SplitScreenRenderer {
 
     private static final Camera secondCamera = new Camera();
-
-    // Sonsuz döngüyü önlemek için: ikinci render sırasında bu true olacak
     private static boolean renderingSecondView = false;
 
     public static void init() {
@@ -44,20 +42,25 @@ public class SplitScreenRenderer {
         }
 
         int width = client.getWindow().getFramebufferWidth();
-        int height = client.getWindow().getFramebufferHeight();
+        int halfHeight = client.getWindow().getFramebufferHeight() / 2;
 
         secondCamera.update(client.world, client.player, false, false, tickDelta);
 
-        // Sadece alt yarıyı etkileyecek şekilde kısıtlıyoruz (scissor)
         GL11.glEnable(GL11.GL_SCISSOR_TEST);
-        GL11.glScissor(0, 0, width, height / 2);
+        GL11.glScissor(0, 0, width, halfHeight);
 
-        RenderSystem.viewport(0, 0, width, height / 2);
-
-        // Bu bölgenin eski derinlik verisini temizle, yoksa yeni kamera yanlış çakışır
+        RenderSystem.viewport(0, 0, width, halfHeight);
         RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, false);
 
-        Matrix4f projectionMatrix = client.gameRenderer.getBasicProjectionMatrix(70.0);
+        // Aspect oranını, gerçek (yarım yükseklikteki) viewport'a göre kendimiz hesaplıyoruz
+        float aspect = (float) width / (float) halfHeight;
+        Matrix4f projectionMatrix = new Matrix4f().perspective(
+                (float) Math.toRadians(70.0),
+                aspect,
+                0.05f,
+                512.0f
+        );
+
         MatrixStack matrices = new MatrixStack();
 
         client.worldRenderer.render(
@@ -72,7 +75,7 @@ public class SplitScreenRenderer {
         );
 
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
-        RenderSystem.viewport(0, 0, width, height);
+        RenderSystem.viewport(0, 0, width, client.getWindow().getFramebufferHeight());
     }
 
     private static void drawDividerLine(DrawContext context) {
