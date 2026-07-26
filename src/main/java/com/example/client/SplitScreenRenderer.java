@@ -8,6 +8,7 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.render.Camera;
 import net.minecraft.client.util.math.MatrixStack;
 import org.joml.Matrix4f;
+import org.lwjgl.opengl.GL11;
 
 public class SplitScreenRenderer {
 
@@ -24,7 +25,6 @@ public class SplitScreenRenderer {
         });
 
         WorldRenderEvents.END.register(context -> {
-            // Eğer şu an zaten ikinci görüntüyü çiziyorsak, tekrar tetiklenmeyi engelle
             if (renderingSecondView) return;
             if (!ExampleModClient.splitScreenActive) return;
 
@@ -48,7 +48,14 @@ public class SplitScreenRenderer {
 
         secondCamera.update(client.world, client.player, false, false, tickDelta);
 
+        // Sadece alt yarıyı etkileyecek şekilde kısıtlıyoruz (scissor)
+        GL11.glEnable(GL11.GL_SCISSOR_TEST);
+        GL11.glScissor(0, 0, width, height / 2);
+
         RenderSystem.viewport(0, 0, width, height / 2);
+
+        // Bu bölgenin eski derinlik verisini temizle, yoksa yeni kamera yanlış çakışır
+        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, false);
 
         Matrix4f projectionMatrix = client.gameRenderer.getBasicProjectionMatrix(70.0);
         MatrixStack matrices = new MatrixStack();
@@ -64,6 +71,7 @@ public class SplitScreenRenderer {
                 projectionMatrix
         );
 
+        GL11.glDisable(GL11.GL_SCISSOR_TEST);
         RenderSystem.viewport(0, 0, width, height);
     }
 
