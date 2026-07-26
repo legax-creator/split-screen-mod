@@ -24,7 +24,7 @@ public class ExampleModClient implements ClientModInitializer {
             }
 
             if (tickCounter % 100 == 0 && client.player != null) {
-                client.player.sendMessage(Text.of("[SplitScreen] Bagli kumanda sayisi: " + joystickCount), false);
+                client.player.sendMessage(Text.literal("[SplitScreen] Bagli kumanda sayisi: " + joystickCount), false);
             }
 
             // 1. kumanda: Start tusuyla split-screen'i baslat
@@ -33,9 +33,13 @@ public class ExampleModClient implements ClientModInitializer {
                 if (buttons != null && buttons.capacity() > 7 && buttons.get(7) == GLFW.GLFW_PRESS && !splitScreenActive) {
                     splitScreenActive = true;
                     if (client.player != null) {
-                        client.player.sendMessage(Text.of("[SplitScreen] 2. oyuncu katildi!"), false);
+                        client.player.sendMessage(Text.literal("[SplitScreen] 2. oyuncu katildi!"), false);
                     }
-                    SecondPlayerManager.spawnPlayer2(client.getServer());
+
+                    // Artik sunucuya degil, dogrudan client dunyasina ekliyoruz
+                    if (client.world != null && client.player != null) {
+                        SecondPlayerManager.spawnPlayer2(client.world, client.player);
+                    }
                 }
             }
 
@@ -48,12 +52,13 @@ public class ExampleModClient implements ClientModInitializer {
                     float lookX = state.axes(GLFW.GLFW_GAMEPAD_AXIS_RIGHT_X);
 
                     double deadzone = 0.2;
-                    double dx = Math.abs(moveX) > deadzone ? moveX * 0.2 : 0;
-                    double dz = Math.abs(moveY) > deadzone ? moveY * 0.2 : 0;
+                    double strafe = Math.abs(moveX) > deadzone ? moveX * 0.2 : 0;
+                    // Not: joystick yukari itildiginde eksen negatif olur, bu yuzden ters ceviriyoruz
+                    double forward = Math.abs(moveY) > deadzone ? -moveY * 0.2 : 0;
                     float yawDelta = Math.abs(lookX) > deadzone ? lookX * 3.0f : 0;
 
-                    if (dx != 0 || dz != 0 || yawDelta != 0) {
-                        SecondPlayerManager.movePlayer2(client.getServer(), dx, dz, yawDelta);
+                    if (strafe != 0 || forward != 0 || yawDelta != 0) {
+                        SecondPlayerManager.movePlayer2(forward, strafe, yawDelta);
                     }
                 }
             }
