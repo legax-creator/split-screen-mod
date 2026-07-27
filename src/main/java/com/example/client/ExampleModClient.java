@@ -52,6 +52,10 @@ public class ExampleModClient implements ClientModInitializer {
                     float moveX = state.axes(GLFW.GLFW_GAMEPAD_AXIS_LEFT_X);
                     float moveY = state.axes(GLFW.GLFW_GAMEPAD_AXIS_LEFT_Y);
                     float lookX = state.axes(GLFW.GLFW_GAMEPAD_AXIS_RIGHT_X);
+                    boolean jumpPressed = state.buttons(GLFW.GLFW_GAMEPAD_BUTTON_A) == GLFW.GLFW_PRESS;
+                    // L3 (sol stick basma) = kosma, R3 (sag stick basma) = egilme
+                    boolean sprintPressed = state.buttons(GLFW.GLFW_GAMEPAD_BUTTON_LEFT_THUMB) == GLFW.GLFW_PRESS;
+                    boolean sneakPressed = state.buttons(GLFW.GLFW_GAMEPAD_BUTTON_RIGHT_THUMB) == GLFW.GLFW_PRESS;
 
                     double deadzone = 0.2;
                     double strafe = Math.abs(moveX) > deadzone ? moveX * 0.2 : 0;
@@ -59,9 +63,8 @@ public class ExampleModClient implements ClientModInitializer {
                     double forward = Math.abs(moveY) > deadzone ? -moveY * 0.2 : 0;
                     float yawDelta = Math.abs(lookX) > deadzone ? lookX * 3.0f : 0;
 
-                    if (strafe != 0 || forward != 0 || yawDelta != 0) {
-                        SecondPlayerManager.movePlayer2(forward, strafe, yawDelta);
-                    }
+                    // Her tick cagriliyor (hareket olmasa bile) ki yercekimi surekli islesin
+                    SecondPlayerManager.tickPlayer2(forward, strafe, yawDelta, jumpPressed, sprintPressed, sneakPressed);
                 }
             }
         });
