@@ -43,10 +43,12 @@ public class ExampleModClient implements ClientModInitializer {
                 }
             }
 
-            // 2. kumanda: hareket
-            if (splitScreenActive && GLFW.glfwJoystickPresent(GLFW.GLFW_JOYSTICK_2)) {
+            // Tek fiziksel kumanda var (PS kolu) ve o Joystick 1 slotunda.
+            // Klavye+fare zaten 1. oyuncuyu (vanilla) kontrol ediyor, bu yuzden
+            // ayni kumandadan 2. oyuncunun hareketini de okuyoruz.
+            if (splitScreenActive && GLFW.glfwJoystickPresent(GLFW.GLFW_JOYSTICK_1)) {
                 GLFWGamepadState state = GLFWGamepadState.create();
-                if (GLFW.glfwGetGamepadState(GLFW.GLFW_JOYSTICK_2, state)) {
+                if (GLFW.glfwGetGamepadState(GLFW.GLFW_JOYSTICK_1, state)) {
                     float moveX = state.axes(GLFW.GLFW_GAMEPAD_AXIS_LEFT_X);
                     float moveY = state.axes(GLFW.GLFW_GAMEPAD_AXIS_LEFT_Y);
                     float lookX = state.axes(GLFW.GLFW_GAMEPAD_AXIS_RIGHT_X);
