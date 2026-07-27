@@ -55,7 +55,7 @@ public class SplitScreenRenderer {
         GL11.glScissor(0, 0, width, halfHeight);
 
         RenderSystem.viewport(0, 0, width, halfHeight);
-        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, false);
+        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT, false);
 
         float aspect = (float) width / (float) halfHeight;
         Matrix4f projectionMatrix = new Matrix4f().perspective(
