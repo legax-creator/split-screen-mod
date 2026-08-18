@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "dogmod",
+  "version": "1.0.0",
+  "name": "Dog Player Mod",
+  "description": "Origins ile entegre tam köpek oyuncu modu",
+  "authors": ["Sen"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.dogmod.DogMod"],
+    "client": ["com.dogmod.DogModClient"]
+  },
+  "mixins": ["dogmod.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.14.0",
+    "fabric-api": "*",
+    "minecraft": "~1.20.1",
+    "origins": "*",
+    "disguiselib": "*"
+  }
+}
