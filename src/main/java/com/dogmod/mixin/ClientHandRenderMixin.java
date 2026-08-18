@@ -18,18 +18,14 @@ public class ClientHandRenderMixin {
     private void hideHand(CallbackInfo ci) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
-
         try {
-            // Origins verisini player NBT'sinden oku
             NbtCompound nbt = new NbtCompound();
             client.player.writeNbt(nbt);
-
-            // Origins, origin ID'sini PlayerData NBT'sine yazar
             if (nbt.contains("origins")) {
                 NbtCompound origins = nbt.getCompound("origins");
                 for (String key : origins.getKeys()) {
-                    String originId = origins.getString(key);
-                    if (originId.equals("dogmod:dog") || originId.contains("wolf")) {
+                    String id = origins.getString(key);
+                    if (id.equals("dogmod:dog") || id.contains("wolf")) {
                         ci.cancel();
                         return;
                     }
