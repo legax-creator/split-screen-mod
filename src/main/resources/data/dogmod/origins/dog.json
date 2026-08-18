@@ -8,6 +8,7 @@
     "dogmod:no_right_click",
     "dogmod:night_vision",
     "dogmod:fall_resistance",
-    "dogmod:meat_diet"
+    "dogmod:meat_diet",
+    "dogmod:dog_stats"
   ]
 }
