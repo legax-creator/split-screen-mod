@@ -8,18 +8,6 @@ group = "com.dogmod"
 
 repositories {
     maven { url "https://maven.fabricmc.net/" }
-    maven { url "https://maven.ladysnake.org/releases" }
-    exclusiveContent {
-        forRepository {
-            maven {
-                name = "Modrinth"
-                url = "https://api.modrinth.com/maven"
-            }
-        }
-        filter {
-            includeGroup "maven.modrinth"
-        }
-    }
 }
 
 dependencies {
@@ -27,13 +15,6 @@ dependencies {
     mappings "net.fabricmc:yarn:1.20.1+build.10:v2"
     modImplementation "net.fabricmc:fabric-loader:0.15.11"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.92.2+1.20.1"
-
-    // Origins - Modrinth üzerinden
-    modCompileOnly "maven.modrinth:3BeIrqZR:oT0CGnBQ"
-
-    // Cardinal Components (Origins bağımlılığı)
-    modCompileOnly "dev.onyxstudios.cardinal-components-api:cardinal-components-base:5.2.2"
-    modCompileOnly "dev.onyxstudios.cardinal-components-api:cardinal-components-entity:5.2.2"
 }
 
 java {
