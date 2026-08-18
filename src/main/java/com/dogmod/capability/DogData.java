@@ -8,6 +8,7 @@ public class DogData {
     private boolean tamed = false;
     private boolean sitting = false;
     private boolean leashed = false;
+    private boolean leashFixed = false; // Direğe mi bağlı, sahibine mi
     private double leashAnchorX, leashAnchorY, leashAnchorZ;
 
     public boolean isTamed() { return tamed; }
@@ -19,6 +20,8 @@ public class DogData {
     public void setSitting(boolean sitting) { this.sitting = sitting; }
     public boolean isLeashed() { return leashed; }
     public void setLeashed(boolean leashed) { this.leashed = leashed; }
+    public boolean isLeashFixed() { return leashFixed; }
+    public void setLeashFixed(boolean leashFixed) { this.leashFixed = leashFixed; }
     public double getLeashAnchorX() { return leashAnchorX; }
     public double getLeashAnchorY() { return leashAnchorY; }
     public double getLeashAnchorZ() { return leashAnchorZ; }
@@ -27,8 +30,10 @@ public class DogData {
         this.leashAnchorX = x; this.leashAnchorY = y; this.leashAnchorZ = z;
         this.leashed = true;
     }
+
     public void clearLeash() {
         this.leashed = false;
+        this.leashFixed = false;
         this.leashAnchorX = 0; this.leashAnchorY = 0; this.leashAnchorZ = 0;
     }
 
@@ -36,6 +41,7 @@ public class DogData {
         nbt.putBoolean("tamed", tamed);
         nbt.putBoolean("sitting", sitting);
         nbt.putBoolean("leashed", leashed);
+        nbt.putBoolean("leashFixed", leashFixed);
         if (ownerUUID != null) nbt.putUuid("ownerUUID", ownerUUID);
         if (leashed) {
             nbt.putDouble("leashX", leashAnchorX);
@@ -48,6 +54,7 @@ public class DogData {
         this.tamed = nbt.getBoolean("tamed");
         this.sitting = nbt.getBoolean("sitting");
         this.leashed = nbt.getBoolean("leashed");
+        this.leashFixed = nbt.getBoolean("leashFixed");
         if (nbt.containsUuid("ownerUUID")) this.ownerUUID = nbt.getUuid("ownerUUID");
         if (leashed) {
             this.leashAnchorX = nbt.getDouble("leashX");
