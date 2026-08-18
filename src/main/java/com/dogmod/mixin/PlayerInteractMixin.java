@@ -13,8 +13,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerEntity.class)
 public class PlayerInteractMixin {
-    @Inject(method = "interactOn", at = @At("HEAD"), cancellable = true)
-    private void blockInteract(Entity entity, Hand hand, CallbackInfoReturnable<ActionResult> cir) {
+
+    @Inject(
+        method = "interact(Lnet/minecraft/entity/Entity;Lnet/minecraft/util/Hand;)Lnet/minecraft/util/ActionResult;",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void blockInteract(Entity entity, Hand hand,
+            CallbackInfoReturnable<ActionResult> cir) {
         PlayerEntity player = (PlayerEntity)(Object)this;
         if (!(player instanceof ServerPlayerEntity sp)) return;
         if (!DogOriginChecker.isDogPlayer(sp)) return;
