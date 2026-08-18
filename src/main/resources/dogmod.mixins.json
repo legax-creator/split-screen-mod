@@ -9,8 +9,5 @@
   ],
   "client": [
     "ClientHandRenderMixin"
-  ],
-  "injectors": {
-    "defaultRequire": 1
-  }
+  ]
 }
