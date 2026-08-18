@@ -9,7 +9,6 @@ group = "com.dogmod"
 repositories {
     maven { url "https://maven.fabricmc.net/" }
     maven { url "https://apace100.jfrog.io/artifactory/mc-mods" }
-    maven { url "https://jitpack.io" }
 }
 
 dependencies {
@@ -18,7 +17,6 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:0.14.22"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.92.0+1.20.1"
     modCompileOnly "io.github.apace100:origins:1.20.1-1.10.0"
-    modImplementation "com.github.NucleoidMC:DisguiseLib:1.20.1-SNAPSHOT"
 }
 
 java {
