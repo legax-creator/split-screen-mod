@@ -9,7 +9,6 @@ group = "com.dogmod"
 repositories {
     maven { url "https://maven.fabricmc.net/" }
     maven { url "https://maven.ladysnake.org/releases" }
-    maven { url "https://apace100.jfrog.io/artifactory/mc-mods" }
     exclusiveContent {
         forRepository {
             maven {
@@ -29,9 +28,10 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:0.15.11"
     modImplementation "net.fabricmc.fabric-api:fabric-api:0.92.2+1.20.1"
 
-    // Origins ve bağımlılıkları
-    modCompileOnly "io.github.apace100:origins:1.20.1-1.10.0"
-    modCompileOnly "io.github.apace100:calio:1.20.1-1.10.0"
+    // Origins - Modrinth üzerinden
+    modCompileOnly "maven.modrinth:3BeIrqZR:oT0CGnBQ"
+
+    // Cardinal Components (Origins bağımlılığı)
     modCompileOnly "dev.onyxstudios.cardinal-components-api:cardinal-components-base:5.2.2"
     modCompileOnly "dev.onyxstudios.cardinal-components-api:cardinal-components-entity:5.2.2"
 }
