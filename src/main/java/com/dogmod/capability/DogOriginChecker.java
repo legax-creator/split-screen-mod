@@ -8,6 +8,7 @@ import io.github.apace100.origins.registry.ModComponents;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 public class DogOriginChecker {
+
     private static final String[] DOG_ORIGIN_IDS = {
         "dogmod:dog", "moborigins:wolf", "origins:wolf", "extraorigins:wolf"
     };
@@ -23,7 +24,9 @@ public class DogOriginChecker {
                     if (id.equals(dogId)) return true;
                 }
             }
-        } catch (Exception e) { return false; }
+        } catch (Exception e) {
+            return false;
+        }
         return false;
     }
 }
