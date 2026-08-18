@@ -1,0 +1,7 @@
+{
+  "order": 2,
+  "origins": ["dogmod:dog"],
+  "enabled": true,
+  "allow_random": false,
+  "name": "Köpek"
+}
