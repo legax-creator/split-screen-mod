@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "com.dogmod.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "PlayerHandMixin",
+    "PlayerInteractMixin",
+    "BoatMixin"
+  ],
+  "client": [
+    "ClientHandRenderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
