@@ -1,18 +1,37 @@
-private static ActionResult feed(ServerPlayerEntity owner, ServerPlayerEntity dog,
-        DogData data, ItemStack meat) {
-    // Canı değil açlığı doldur
-    net.minecraft.entity.player.HungerManager hunger = dog.getHungerManager();
-    
-    // Et başına +4 açlık puanı (vanilla köpek gibi)
-    int newFood = Math.min(20, hunger.getFoodLevel() + 4);
-    hunger.setFoodLevel(newFood);
-    // Doyma (saturation) da ekle
-    hunger.setSaturationLevel(Math.min(hunger.getSaturationLevel() + 2.0f, newFood));
+package com.dogmod.mixin;
 
-    if (!owner.isCreative()) meat.decrement(1);
+import com.dogmod.capability.DogOriginChecker;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-    playSound(dog, SoundEvents.ENTITY_WOLF_AMBIENT, 1.2f);
-    dog.sendMessage(Text.literal("§c🍖 Sahibin seni besledi!"), true);
-    owner.sendMessage(Text.literal("§a" + dog.getName().getString() + " beslendi!"), false);
-    return ActionResult.SUCCESS;
+@Mixin(PlayerEntity.class)
+public class PlayerFoodMixin {
+
+    @Inject(method = "eatFood", at = @At("HEAD"), cancellable = true)
+    private void blockEating(net.minecraft.world.World world, ItemStack stack,
+            CallbackInfoReturnable<ItemStack> cir) {
+        PlayerEntity player = (PlayerEntity)(Object)this;
+        if (!(player instanceof ServerPlayerEntity sp)) return;
+        if (!DogOriginChecker.isDogPlayer(sp)) return;
+        cir.setReturnValue(stack);
+    }
+
+    @Inject(
+        method = "tryPickUp(Lnet/minecraft/entity/ItemEntity;)V",
+        at = @At("HEAD"),
+        cancellable = true
+    )
+    private void blockPickup(ItemEntity itemEntity, CallbackInfo ci) {
+        PlayerEntity player = (PlayerEntity)(Object)this;
+        if (!(player instanceof ServerPlayerEntity sp)) return;
+        if (!DogOriginChecker.isDogPlayer(sp)) return;
+        ci.cancel();
+    }
 }
