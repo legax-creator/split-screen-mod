@@ -38,18 +38,15 @@ public class PlayerHandMixin {
         }
     }
 
-    // Tekne/araçtan inme engeli (sneak paketi ile iner oyuncu)
+    // Tekne/araçtan inme engeli
     @Inject(method = "onClientCommand", at = @At("HEAD"), cancellable = true)
     private void blockVehicleExit(ClientCommandC2SPacket packet, CallbackInfo ci) {
         if (!DogOriginChecker.isDogPlayer(player)) return;
         if (!player.hasVehicle()) return;
-
-        // LEAVE_BED hariç tüm araçtan çıkma komutlarını engelle
-        if (packet.getMode() == ClientCommandC2SPacket.Mode.START_SNEAKING) {
-            // Sahibi mi indiriyor? Değilse engelle
+        if (packet.getMode() == ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY) {
             DogData data = DogDataManager.get(player);
             if (data.isTamed() && data.getOwnerUUID() != null) {
-                ci.cancel(); // Köpek kendisi inemez
+                ci.cancel();
             }
         }
     }
