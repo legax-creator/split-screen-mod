@@ -4,13 +4,16 @@ import net.minecraft.nbt.NbtCompound;
 import java.util.UUID;
 
 public class DogData {
+    private boolean isDog = false;
     private UUID ownerUUID = null;
     private boolean tamed = false;
     private boolean sitting = false;
     private boolean leashed = false;
-    private boolean leashFixed = false; // Direğe mi bağlı, sahibine mi
+    private boolean leashFixed = false;
     private double leashAnchorX, leashAnchorY, leashAnchorZ;
 
+    public boolean isDog() { return isDog; }
+    public void setDog(boolean isDog) { this.isDog = isDog; }
     public boolean isTamed() { return tamed; }
     public void setTamed(boolean tamed) { this.tamed = tamed; }
     public UUID getOwnerUUID() { return ownerUUID; }
@@ -38,6 +41,7 @@ public class DogData {
     }
 
     public void writeToNbt(NbtCompound nbt) {
+        nbt.putBoolean("isDog", isDog);
         nbt.putBoolean("tamed", tamed);
         nbt.putBoolean("sitting", sitting);
         nbt.putBoolean("leashed", leashed);
@@ -51,6 +55,7 @@ public class DogData {
     }
 
     public void readFromNbt(NbtCompound nbt) {
+        this.isDog = nbt.getBoolean("isDog");
         this.tamed = nbt.getBoolean("tamed");
         this.sitting = nbt.getBoolean("sitting");
         this.leashed = nbt.getBoolean("leashed");
