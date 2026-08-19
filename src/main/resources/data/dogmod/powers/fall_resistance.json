@@ -1,1 +1,0 @@
-{"type":"origins:attribute","name":"Köpek Ayakları","description":"Düşme hasarına dirençlisin.","modifier":{"attribute":"minecraft:generic.safe_fall_distance","operation":"add_value","value":4.0}}

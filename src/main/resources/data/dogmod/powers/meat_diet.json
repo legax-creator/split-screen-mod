@@ -1,1 +1,0 @@
-{"type":"origins:restricts_eating","name":"Etçil","description":"Sadece et yiyebilirsin.","item_condition":{"type":"origins:ingredient","ingredient":{"tag":"minecraft:meat"}}}
