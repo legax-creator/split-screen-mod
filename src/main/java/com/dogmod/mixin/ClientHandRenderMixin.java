@@ -1,10 +1,10 @@
 package com.dogmod.mixin;
 
+import com.dogmod.capability.DogDataManager;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.item.HeldItemRenderer;
-import net.minecraft.nbt.NbtCompound;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,19 +18,8 @@ public class ClientHandRenderMixin {
     private void hideHand(CallbackInfo ci) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
-        try {
-            NbtCompound nbt = new NbtCompound();
-            client.player.writeNbt(nbt);
-            if (nbt.contains("origins")) {
-                NbtCompound origins = nbt.getCompound("origins");
-                for (String key : origins.getKeys()) {
-                    String id = origins.getString(key);
-                    if (id.equals("dogmod:dog") || id.contains("wolf")) {
-                        ci.cancel();
-                        return;
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
+        // Client tarafında UUID ile server data'ya erişemeyiz
+        // Bu yüzden client-side bir flag tutuyoruz
+        // Şimdilik devre dışı - ileride client-server sync eklenebilir
     }
 }
