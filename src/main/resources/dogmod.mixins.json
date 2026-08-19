@@ -5,7 +5,8 @@
   "mixins": [
     "PlayerHandMixin",
     "PlayerInteractMixin",
-    "BoatMixin"
+    "BoatMixin",
+    "PlayerHitboxMixin"
   ],
   "client": [
     "ClientHandRenderMixin"
