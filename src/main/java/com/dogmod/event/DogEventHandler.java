@@ -14,6 +14,7 @@ import net.minecraft.block.FenceBlock;
 import net.minecraft.block.FenceGateBlock;
 import net.minecraft.block.WallBlock;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.player.HungerManager;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -68,8 +69,6 @@ public class DogEventHandler {
         DogMod.LOGGER.info("DogEventHandler kayıt edildi");
     }
 
-    // ── ENTITY SAĞ TIK ───────────────────────────────────────────────────────
-
     private static ActionResult onUseEntity(PlayerEntity player, World world, Hand hand,
             net.minecraft.entity.Entity entity, EntityHitResult hitResult) {
         if (world.isClient) return ActionResult.PASS;
@@ -80,27 +79,22 @@ public class DogEventHandler {
         ItemStack held = interactor.getStackInHand(hand);
         DogData data = DogDataManager.get(target);
 
-        // Evcilleştirme
         if (!data.isTamed() && held.isOf(Items.BONE))
             return tame(interactor, target, data, held);
 
         if (!data.isTamed() || !data.isOwner(interactor.getUuid()))
             return ActionResult.PASS;
 
-        // Tasma tak/çöz
         if (held.isOf(Items.LEAD)) return toggleLeash(interactor, target, data, held);
-
-        // Oturma
         if (interactor.isSneaking()) return toggleSit(interactor, target, data);
 
-        // Besleme
-        if (MEAT_ITEMS.contains(held.getItem()) && target.getHealth() < target.getMaxHealth())
+        // Besleme - açlık dolmamışsa
+        if (MEAT_ITEMS.contains(held.getItem())
+                && target.getHungerManager().getFoodLevel() < 20)
             return feed(interactor, target, data, held);
 
         return ActionResult.PASS;
     }
-
-    // ── BLOK SAĞ TIK (tasmayla direğe bağlama) ───────────────────────────────
 
     private static ActionResult onUseBlock(PlayerEntity player, World world, Hand hand,
             BlockHitResult hitResult) {
@@ -108,14 +102,12 @@ public class DogEventHandler {
         if (!(player instanceof ServerPlayerEntity interactor)) return ActionResult.PASS;
         if (!interactor.getStackInHand(hand).isOf(Items.LEAD)) return ActionResult.PASS;
 
-        // Sahibinin tasmalı köpeği var mı?
         for (ServerPlayerEntity dog : world.getServer().getPlayerManager().getPlayerList()) {
             if (!DogOriginChecker.isDogPlayer(dog)) continue;
             DogData data = DogDataManager.get(dog);
             if (!data.isTamed() || !data.isOwner(interactor.getUuid())) continue;
             if (!data.isLeashed()) continue;
 
-            // Tıklanan blok çit/duvar mı?
             BlockPos pos = hitResult.getBlockPos();
             net.minecraft.block.BlockState state = world.getBlockState(pos);
             boolean isFence = state.getBlock() instanceof FenceBlock
@@ -123,9 +115,8 @@ public class DogEventHandler {
                 || state.getBlock() instanceof WallBlock;
 
             if (isFence) {
-                // Köpeği bu noktaya bağla
                 data.setLeashAnchor(pos.getX() + 0.5, pos.getY() + 1.0, pos.getZ() + 0.5);
-                data.setLeashFixed(true); // Sabit bağlama noktası
+                data.setLeashFixed(true);
 
                 if (!interactor.isCreative())
                     interactor.getStackInHand(hand).decrement(1);
@@ -142,8 +133,6 @@ public class DogEventHandler {
         }
         return ActionResult.PASS;
     }
-
-    // ── EVCİLLEŞTİRME ────────────────────────────────────────────────────────
 
     private static ActionResult tame(ServerPlayerEntity owner, ServerPlayerEntity dog,
             DogData data, ItemStack bone) {
@@ -165,8 +154,6 @@ public class DogEventHandler {
         return ActionResult.SUCCESS;
     }
 
-    // ── OTURMA ───────────────────────────────────────────────────────────────
-
     private static ActionResult toggleSit(ServerPlayerEntity owner, ServerPlayerEntity dog,
             DogData data) {
         boolean nowSitting = !data.isSitting();
@@ -184,19 +171,21 @@ public class DogEventHandler {
         return ActionResult.SUCCESS;
     }
 
-    // ── BESLEME ───────────────────────────────────────────────────────────────
-
     private static ActionResult feed(ServerPlayerEntity owner, ServerPlayerEntity dog,
             DogData data, ItemStack meat) {
-        dog.heal(4.0f);
+        // Canı değil açlığı doldur
+        HungerManager hunger = dog.getHungerManager();
+        int newFood = Math.min(20, hunger.getFoodLevel() + 4);
+        hunger.setFoodLevel(newFood);
+        hunger.setSaturationLevel(Math.min(hunger.getSaturationLevel() + 2.0f, newFood));
+
         if (!owner.isCreative()) meat.decrement(1);
+
         playSound(dog, SoundEvents.ENTITY_WOLF_AMBIENT, 1.2f);
-        dog.sendMessage(Text.literal("§c❤ Sahibin seni besledi! +4 can"), true);
+        dog.sendMessage(Text.literal("§c🍖 Sahibin seni besledi!"), true);
         owner.sendMessage(Text.literal("§a" + dog.getName().getString() + " beslendi!"), false);
         return ActionResult.SUCCESS;
     }
-
-    // ── TASMA ────────────────────────────────────────────────────────────────
 
     private static ActionResult toggleLeash(ServerPlayerEntity owner, ServerPlayerEntity dog,
             DogData data, ItemStack lead) {
@@ -218,8 +207,6 @@ public class DogEventHandler {
         return ActionResult.SUCCESS;
     }
 
-    // ── SERVER TICK ───────────────────────────────────────────────────────────
-
     private static void onServerTick(MinecraftServer server) {
         tickCounter++;
         if (tickCounter % TELEPORT_CHECK_INTERVAL != 0) return;
@@ -232,11 +219,7 @@ public class DogEventHandler {
             ServerPlayerEntity owner = server.getPlayerManager().getPlayer(data.getOwnerUUID());
             if (owner == null) continue;
 
-            if (data.isLeashed()) {
-                tickLeash(player, owner, data);
-                continue;
-            }
-
+            if (data.isLeashed()) { tickLeash(player, owner, data); continue; }
             if (data.isSitting()) continue;
 
             double dist = player.squaredDistanceTo(owner);
@@ -247,13 +230,11 @@ public class DogEventHandler {
     }
 
     private static void tickLeash(ServerPlayerEntity dog, ServerPlayerEntity owner, DogData data) {
-        // Sabit bağlama (direğe) — sahibin konumundan bağımsız
         double anchorX = data.getLeashAnchorX();
         double anchorY = data.getLeashAnchorY();
         double anchorZ = data.getLeashAnchorZ();
 
         if (!data.isLeashFixed()) {
-            // Sahibine bağlı tasma - anchor'ı güncelle
             if (!dog.getWorld().getRegistryKey().equals(owner.getWorld().getRegistryKey())) {
                 data.clearLeash();
                 dog.sendMessage(Text.literal("§cTasman koptu!"), true);
@@ -271,8 +252,7 @@ public class DogEventHandler {
         double dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
 
         if (dist > LEASH_MAX_DISTANCE) {
-            double len = dist;
-            dog.setVelocity(dx/len*0.4, dy/len*0.1+0.1, dz/len*0.4);
+            dog.setVelocity(dx/dist*0.4, dy/dist*0.1+0.1, dz/dist*0.4);
             dog.velocityModified = true;
         }
     }
@@ -284,8 +264,6 @@ public class DogEventHandler {
         playSound(dog, SoundEvents.ENTITY_ENDERMAN_TELEPORT, 1.5f);
         dog.sendMessage(Text.literal("§7Sahibinin yanına ışınlandın."), true);
     }
-
-    // ── ÖLÜM ─────────────────────────────────────────────────────────────────
 
     private static void onPlayerDeath(net.minecraft.entity.LivingEntity entity,
             DamageSource source) {
