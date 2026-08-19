@@ -3,7 +3,7 @@
   "id": "dogmod",
   "version": "1.0.0",
   "name": "Dog Player Mod",
-  "description": "Origins ile entegre tam köpek oyuncu modu",
+  "description": "Köpek oyuncu modu - /dog komutuyla köpek ol!",
   "authors": ["Sen"],
   "license": "MIT",
   "environment": "*",
@@ -15,7 +15,6 @@
   "depends": {
     "fabricloader": ">=0.14.0",
     "fabric-api": "*",
-    "minecraft": "~1.20.1",
-    "origins": "*"
+    "minecraft": "~1.20.1"
   }
 }
