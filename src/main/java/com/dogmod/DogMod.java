@@ -2,6 +2,7 @@ package com.dogmod;
 
 import com.dogmod.capability.DogDataManager;
 import com.dogmod.command.DogCommand;
+import com.dogmod.disguise.DogAnimationHandler;
 import com.dogmod.event.DogEventHandler;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -17,9 +18,10 @@ public class DogMod implements ModInitializer {
         LOGGER.info("Dog Player Mod başlatılıyor...");
         DogDataManager.register();
         DogEventHandler.register();
+        DogAnimationHandler.register();
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             DogCommand.register(dispatcher);
         });
-        LOGGER.info("Dog Player Mod hazır! /dog komutuyla köpek olunur.");
+        LOGGER.info("Dog Player Mod hazır!");
     }
 }
