@@ -7,14 +7,11 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.network.packet.s2c.play.EntityS2CPacket;
 import net.minecraft.network.packet.s2c.play.EntityVelocityUpdateS2CPacket;
+import net.minecraft.network.packet.s2c.play.EntitySetHeadYawS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 
-/**
- * Her tick'te wolf entity'sinin hareket paketlerini gönderir.
- * Bu sayede diğer oyuncular wolf animasyonunu görür.
- */
 public class DogAnimationHandler {
 
     public static void register() {
@@ -27,7 +24,6 @@ public class DogAnimationHandler {
 
             ServerWorld world = (ServerWorld) dog.getWorld();
 
-            // Geçici wolf oluştur, pozisyonunu köpek oyuncuyla eşleştir
             WolfEntity wolf = EntityType.WOLF.create(world);
             if (wolf == null) continue;
 
@@ -37,15 +33,14 @@ public class DogAnimationHandler {
             wolf.setYaw(dog.getYaw());
             wolf.setPitch(dog.getPitch());
             wolf.setHeadYaw(dog.getHeadYaw());
-
-            boolean isMoving = dog.getVelocity().horizontalLength() > 0.01;
             wolf.setInSittingPose(DogDataManager.get(dog).isSitting());
 
-            // Diğer oyunculara hareket paketi gönder
+            boolean isMoving = dog.getVelocity().horizontalLength() > 0.01;
+
             for (ServerPlayerEntity observer : server.getPlayerManager().getPlayerList()) {
                 if (observer == dog) continue;
 
-                // Pozisyon ve rotasyon paketi
+                // Pozisyon ve hareket paketi
                 observer.networkHandler.sendPacket(
                     new EntityS2CPacket.MoveRelative(
                         dog.getId(),
@@ -56,18 +51,16 @@ public class DogAnimationHandler {
                     )
                 );
 
-                // Baş rotasyonu
+                // Baş rotasyonu (1.20.1'de doğru paket)
                 observer.networkHandler.sendPacket(
-                    new EntityS2CPacket.RotateHead(wolf, (byte)(dog.getHeadYaw() * 256.0F / 360.0F))
+                    new EntitySetHeadYawS2CPacket(wolf,
+                        (byte)(dog.getHeadYaw() * 256.0F / 360.0F))
                 );
 
-                // Hız paketi (yürüyüş animasyonu için)
+                // Hız paketi
                 if (isMoving) {
                     observer.networkHandler.sendPacket(
-                        new EntityVelocityUpdateS2CPacket(
-                            dog.getId(),
-                            dog.getVelocity()
-                        )
+                        new EntityVelocityUpdateS2CPacket(dog.getId(), dog.getVelocity())
                     );
                 }
             }
