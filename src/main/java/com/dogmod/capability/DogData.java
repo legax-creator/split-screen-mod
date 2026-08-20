@@ -12,6 +12,11 @@ public class DogData {
     private boolean leashFixed = false;
     private double leashAnchorX, leashAnchorY, leashAnchorZ;
 
+    // Çiftleşme
+    private boolean inLove = false;          // Aşk modunda mı
+    private long loveCooldown = 0;           // Son çiftleşme zamanı (ms)
+    private static final long LOVE_COOLDOWN_MS = 300000; // 5 dakika
+
     public boolean isDog() { return isDog; }
     public void setDog(boolean isDog) { this.isDog = isDog; }
     public boolean isTamed() { return tamed; }
@@ -28,6 +33,17 @@ public class DogData {
     public double getLeashAnchorX() { return leashAnchorX; }
     public double getLeashAnchorY() { return leashAnchorY; }
     public double getLeashAnchorZ() { return leashAnchorZ; }
+
+    // Çiftleşme metodları
+    public boolean isInLove() { return inLove; }
+    public void setInLove(boolean inLove) { this.inLove = inLove; }
+    public boolean canBreed() {
+        return System.currentTimeMillis() - loveCooldown > LOVE_COOLDOWN_MS;
+    }
+    public void setBreedCooldown() {
+        this.loveCooldown = System.currentTimeMillis();
+        this.inLove = false;
+    }
 
     public void setLeashAnchor(double x, double y, double z) {
         this.leashAnchorX = x; this.leashAnchorY = y; this.leashAnchorZ = z;
@@ -46,6 +62,8 @@ public class DogData {
         nbt.putBoolean("sitting", sitting);
         nbt.putBoolean("leashed", leashed);
         nbt.putBoolean("leashFixed", leashFixed);
+        nbt.putBoolean("inLove", inLove);
+        nbt.putLong("loveCooldown", loveCooldown);
         if (ownerUUID != null) nbt.putUuid("ownerUUID", ownerUUID);
         if (leashed) {
             nbt.putDouble("leashX", leashAnchorX);
@@ -60,6 +78,8 @@ public class DogData {
         this.sitting = nbt.getBoolean("sitting");
         this.leashed = nbt.getBoolean("leashed");
         this.leashFixed = nbt.getBoolean("leashFixed");
+        this.inLove = nbt.getBoolean("inLove");
+        this.loveCooldown = nbt.getLong("loveCooldown");
         if (nbt.containsUuid("ownerUUID")) this.ownerUUID = nbt.getUuid("ownerUUID");
         if (leashed) {
             this.leashAnchorX = nbt.getDouble("leashX");
