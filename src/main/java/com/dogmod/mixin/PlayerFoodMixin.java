@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(PlayerEntity.class)
 public class PlayerFoodMixin {
 
+    // Kendi başına yemek yemeyi engelle
     @Inject(method = "eatFood", at = @At("HEAD"), cancellable = true)
     private void blockEating(net.minecraft.world.World world, ItemStack stack,
             CallbackInfoReturnable<ItemStack> cir) {
@@ -23,15 +24,18 @@ public class PlayerFoodMixin {
         cir.setReturnValue(stack);
     }
 
+    // Yerden eşya almayı engelle
     @Inject(
-        method = "tryPickUp(Lnet/minecraft/entity/ItemEntity;)V",
+        method = "touch(Lnet/minecraft/entity/Entity;)V",
         at = @At("HEAD"),
         cancellable = true
     )
-    private void blockPickup(ItemEntity itemEntity, CallbackInfo ci) {
+    private void blockPickup(net.minecraft.entity.Entity entity, CallbackInfo ci) {
         PlayerEntity player = (PlayerEntity)(Object)this;
         if (!(player instanceof ServerPlayerEntity sp)) return;
         if (!DogOriginChecker.isDogPlayer(sp)) return;
-        ci.cancel();
+        if (entity instanceof ItemEntity) {
+            ci.cancel();
+        }
     }
 }
