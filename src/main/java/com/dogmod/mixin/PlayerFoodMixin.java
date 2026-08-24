@@ -14,7 +14,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(PlayerEntity.class)
 public class PlayerFoodMixin {
 
-    // Kendi başına yemek yemeyi engelle
     @Inject(method = "eatFood", at = @At("HEAD"), cancellable = true)
     private void blockEating(net.minecraft.world.World world, ItemStack stack,
             CallbackInfoReturnable<ItemStack> cir) {
@@ -24,18 +23,10 @@ public class PlayerFoodMixin {
         cir.setReturnValue(stack);
     }
 
-    // Yerden eşya almayı engelle
-    @Inject(
-        method = "touch(Lnet/minecraft/entity/Entity;)V",
-        at = @At("HEAD"),
-        cancellable = true
-    )
-    private void blockPickup(net.minecraft.entity.Entity entity, CallbackInfo ci) {
-        PlayerEntity player = (PlayerEntity)(Object)this;
-        if (!(player instanceof ServerPlayerEntity sp)) return;
-        if (!DogOriginChecker.isDogPlayer(sp)) return;
-        if (entity instanceof ItemEntity) {
-            ci.cancel();
-        }
+    // Yerden eşya almayı engelle - dropItem yerine item pick up event
+    @Inject(method = "dropItem(Lnet/minecraft/item/ItemStack;Z)Lnet/minecraft/entity/ItemEntity;",
+        at = @At("HEAD"))
+    private void onDrop(ItemStack stack, boolean throwRandomly, CallbackInfoReturnable<ItemEntity> cir) {
+        // Sadece loglama, pickup engeli ServerTickEvents'te yapılacak
     }
 }
