@@ -9,7 +9,6 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.block.FenceBlock;
 import net.minecraft.block.FenceGateBlock;
 import net.minecraft.block.WallBlock;
@@ -18,6 +17,7 @@ import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.HungerManager;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.DyeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.particle.ParticleTypes;
@@ -42,7 +42,7 @@ public class DogEventHandler {
     private static final int TELEPORT_CHECK_INTERVAL = 40;
     private static final double TELEPORT_DISTANCE = 20.0;
     private static final double LEASH_MAX_DISTANCE = 7.0;
-    private static final double BREED_DISTANCE = 3.0; // Çiftleşme mesafesi
+    private static final double BREED_DISTANCE = 3.0;
 
     private static final Set<net.minecraft.item.Item> MEAT_ITEMS = Set.of(
         Items.BEEF, Items.COOKED_BEEF,
@@ -59,18 +59,6 @@ public class DogEventHandler {
         UseBlockCallback.EVENT.register(DogEventHandler::onUseBlock);
         ServerTickEvents.END_SERVER_TICK.register(DogEventHandler::onServerTick);
         ServerLivingEntityEvents.AFTER_DEATH.register(DogEventHandler::onPlayerDeath);
-
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> {
-            ServerPlayerEntity player = handler.getPlayer();
-            DogDisguise.remove(player);
-            DogDataManager.remove(player.getUuid());
-        });
-
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            ServerPlayerEntity player = handler.getPlayer();
-            if (DogOriginChecker.isDogPlayer(player)) DogDisguise.apply(player);
-        });
-
         DogMod.LOGGER.info("DogEventHandler kayıt edildi");
     }
 
@@ -84,25 +72,51 @@ public class DogEventHandler {
         ItemStack held = interactor.getStackInHand(hand);
         DogData data = DogDataManager.get(target);
 
+        // Evcilleştirme
         if (!data.isTamed() && held.isOf(Items.BONE))
             return tame(interactor, target, data, held);
 
+        // Sahip değilse geç
         if (!data.isTamed() || !data.isOwner(interactor.getUuid()))
             return ActionResult.PASS;
 
+        // Name tag ile isim ver
+        if (held.isOf(Items.NAME_TAG) && held.hasCustomName()) {
+            String newName = held.getName().getString();
+            data.setDogName(newName);
+            DogDisguise.refresh(target);
+            com.dogmod.command.DogCommand.updateTabList(target, data);
+            if (!interactor.isCreative()) held.decrement(1);
+            target.sendMessage(Text.literal("§a✨ Yeni ismin: §e" + newName), false);
+            interactor.sendMessage(Text.literal("§a✨ Köpeğine '§e" + newName + "§a' ismini verdin!"), false);
+            return ActionResult.SUCCESS;
+        }
+
+        // Boya ile tasma rengi
+        if (held.getItem() instanceof DyeItem dyeItem) {
+            data.setCollarColor(dyeItem.getColor().getId());
+            DogDisguise.refresh(target);
+            if (!interactor.isCreative()) held.decrement(1);
+            interactor.sendMessage(Text.literal("§7Tasma rengi değiştirildi!"), false);
+            return ActionResult.SUCCESS;
+        }
+
+        // Tasma tak/çöz
         if (held.isOf(Items.LEAD)) return toggleLeash(interactor, target, data, held);
+
+        // Oturma
         if (interactor.isSneaking()) return toggleSit(interactor, target, data);
 
-        if (MEAT_ITEMS.contains(held.getItem())) {
-            // Aşk modu - açlık doluysa ve cooldown bittiyse
-            if (data.isTamed() && data.canBreed()
-                    && target.getHungerManager().getFoodLevel() >= 18) {
-                return enterLoveMode(interactor, target, data, held);
-            }
-            // Normal besleme - açlık dolmamışsa
-            if (target.getHungerManager().getFoodLevel() < 20) {
-                return feed(interactor, target, data, held);
-            }
+        // Aşk modu (açlık doluysa ve cooldown bittiyse)
+        if (MEAT_ITEMS.contains(held.getItem()) && data.canBreed()
+                && target.getHungerManager().getFoodLevel() >= 18) {
+            return enterLoveMode(interactor, target, data, held);
+        }
+
+        // Besleme
+        if (MEAT_ITEMS.contains(held.getItem())
+                && target.getHungerManager().getFoodLevel() < 20) {
+            return feed(interactor, target, data, held);
         }
 
         return ActionResult.PASS;
@@ -142,8 +156,6 @@ public class DogEventHandler {
         return ActionResult.PASS;
     }
 
-    // ── EVCİLLEŞTİRME ────────────────────────────────────────────────────────
-
     private static ActionResult tame(ServerPlayerEntity owner, ServerPlayerEntity dog,
             DogData data, ItemStack bone) {
         if (!owner.isCreative()) bone.decrement(1);
@@ -151,11 +163,19 @@ public class DogEventHandler {
             data.setTamed(true);
             data.setOwnerUUID(owner.getUuid());
             playSound(dog, SoundEvents.ENTITY_WOLF_AMBIENT, 1.5f);
-            dog.sendMessage(Text.literal("§a❤ " + owner.getName().getString()
-                + " seni evcilleştirdi!"), false);
-            owner.sendMessage(Text.literal("§a❤ " + dog.getName().getString()
-                + " artık senin köpeğin!"), false);
+
+            String dogName = data.getDogName() != null
+                ? data.getDogName() : dog.getName().getString();
+
+            // Tüm sunucuya duyur
+            for (ServerPlayerEntity p : dog.getServer().getPlayerManager().getPlayerList()) {
+                p.sendMessage(Text.literal(
+                    "§6🐕 " + dogName + " §a, §e"
+                    + owner.getName().getString() + "§a'nın köpeği oldu!"), false);
+            }
+
             DogDisguise.refresh(dog);
+            com.dogmod.command.DogCommand.updateTabList(dog, data);
         } else {
             playSound(dog, SoundEvents.ENTITY_WOLF_HURT, 1.0f);
             owner.sendMessage(Text.literal("§c" + dog.getName().getString()
@@ -163,8 +183,6 @@ public class DogEventHandler {
         }
         return ActionResult.SUCCESS;
     }
-
-    // ── OTURMA ───────────────────────────────────────────────────────────────
 
     private static ActionResult toggleSit(ServerPlayerEntity owner, ServerPlayerEntity dog,
             DogData data) {
@@ -183,8 +201,6 @@ public class DogEventHandler {
         return ActionResult.SUCCESS;
     }
 
-    // ── BESLEME ───────────────────────────────────────────────────────────────
-
     private static ActionResult feed(ServerPlayerEntity owner, ServerPlayerEntity dog,
             DogData data, ItemStack meat) {
         HungerManager hunger = dog.getHungerManager();
@@ -198,29 +214,21 @@ public class DogEventHandler {
         return ActionResult.SUCCESS;
     }
 
-    // ── AŞK MODU & ÇİFTLEŞME ─────────────────────────────────────────────────
-
     private static ActionResult enterLoveMode(ServerPlayerEntity owner, ServerPlayerEntity dog,
             DogData data, ItemStack meat) {
         if (!owner.isCreative()) meat.decrement(1);
         data.setInLove(true);
-
-        // Kalp partikülü
         if (dog.getWorld() instanceof ServerWorld sw) {
             sw.spawnParticles(ParticleTypes.HEART,
                 dog.getX(), dog.getY() + 1.0, dog.getZ(),
                 5, 0.5, 0.5, 0.5, 0.0);
         }
-
         playSound(dog, SoundEvents.ENTITY_WOLF_AMBIENT, 1.8f);
         dog.sendMessage(Text.literal("§d❤ Çiftleşmeye hazırsın!"), true);
         owner.sendMessage(Text.literal("§d❤ " + dog.getName().getString()
             + " çiftleşmeye hazır!"), false);
-
         return ActionResult.SUCCESS;
     }
-
-    // ── TASMA ────────────────────────────────────────────────────────────────
 
     private static ActionResult toggleLeash(ServerPlayerEntity owner, ServerPlayerEntity dog,
             DogData data, ItemStack lead) {
@@ -242,18 +250,14 @@ public class DogEventHandler {
         return ActionResult.SUCCESS;
     }
 
-    // ── SERVER TICK ───────────────────────────────────────────────────────────
-
     private static void onServerTick(MinecraftServer server) {
         tickCounter++;
 
-        // Çiftleşme kontrolü (her 20 tick = 1 saniye)
         if (tickCounter % 20 == 0) {
             checkBreeding(server);
             checkOwnerSleeping(server);
         }
 
-        // Işınlanma kontrolü (her 2 saniye)
         if (tickCounter % TELEPORT_CHECK_INTERVAL != 0) return;
 
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
@@ -274,129 +278,81 @@ public class DogEventHandler {
         }
     }
 
-    // ── ÇİFTLEŞME ────────────────────────────────────────────────────────────
-
     private static void checkBreeding(MinecraftServer server) {
         List<ServerPlayerEntity> dogPlayers = server.getPlayerManager().getPlayerList()
             .stream()
-            .filter(p -> DogOriginChecker.isDogPlayer(p)
-                && DogDataManager.get(p).isInLove())
+            .filter(p -> DogOriginChecker.isDogPlayer(p) && DogDataManager.get(p).isInLove())
             .toList();
 
-        // Köpek oyuncu + köpek oyuncu
         for (int i = 0; i < dogPlayers.size(); i++) {
             for (int j = i + 1; j < dogPlayers.size(); j++) {
                 ServerPlayerEntity dogA = dogPlayers.get(i);
                 ServerPlayerEntity dogB = dogPlayers.get(j);
-
                 if (dogA.distanceTo(dogB) > BREED_DISTANCE) continue;
-                if (!dogA.getWorld().getRegistryKey()
-                    .equals(dogB.getWorld().getRegistryKey())) continue;
-
+                if (!dogA.getWorld().getRegistryKey().equals(dogB.getWorld().getRegistryKey())) continue;
                 spawnBabyWolf(dogA, dogB);
             }
         }
 
-        // Köpek oyuncu + vanilla wolf
         for (ServerPlayerEntity dog : dogPlayers) {
             if (!(dog.getWorld() instanceof ServerWorld sw)) continue;
-
             List<WolfEntity> nearbyWolves = sw.getEntitiesByClass(
                 WolfEntity.class,
                 dog.getBoundingBox().expand(BREED_DISTANCE),
                 w -> w.isTamed() && w.isInLove()
             );
-
-            if (!nearbyWolves.isEmpty()) {
-                spawnBabyWolf(dog, nearbyWolves.get(0));
-            }
+            if (!nearbyWolves.isEmpty()) spawnBabyWolf(dog, nearbyWolves.get(0));
         }
     }
 
     private static void spawnBabyWolf(ServerPlayerEntity dogA, ServerPlayerEntity dogB) {
-        DogData dataA = DogDataManager.get(dogA);
-        DogData dataB = DogDataManager.get(dogB);
-        dataA.setBreedCooldown();
-        dataB.setBreedCooldown();
-
-        // Yavru wolf spawn et
+        DogDataManager.get(dogA).setBreedCooldown();
+        DogDataManager.get(dogB).setBreedCooldown();
         if (!(dogA.getWorld() instanceof ServerWorld sw)) return;
-
         WolfEntity baby = EntityType.WOLF.create(sw);
         if (baby == null) return;
-
         baby.setBaby(true);
         baby.setTamed(true);
-        baby.refreshPositionAndAngles(
-            dogA.getX(), dogA.getY(), dogA.getZ(),
-            dogA.getYaw(), 0
-        );
+        baby.refreshPositionAndAngles(dogA.getX(), dogA.getY(), dogA.getZ(), dogA.getYaw(), 0);
         sw.spawnEntity(baby);
-
-        // Kalp partikülü
-        sw.spawnParticles(ParticleTypes.HEART,
-            dogA.getX(), dogA.getY() + 1.0, dogA.getZ(),
-            10, 0.5, 0.5, 0.5, 0.0);
-
+        sw.spawnParticles(ParticleTypes.HEART, dogA.getX(), dogA.getY() + 1.0, dogA.getZ(), 10, 0.5, 0.5, 0.5, 0.0);
         dogA.sendMessage(Text.literal("§d🐺 Bir yavru dünyaya geldi!"), false);
         dogB.sendMessage(Text.literal("§d🐺 Bir yavru dünyaya geldi!"), false);
     }
 
     private static void spawnBabyWolf(ServerPlayerEntity dog, WolfEntity wolf) {
-        DogData data = DogDataManager.get(dog);
-        data.setBreedCooldown();
+        DogDataManager.get(dog).setBreedCooldown();
         wolf.setLoveTicks(0);
-
         if (!(dog.getWorld() instanceof ServerWorld sw)) return;
-
         WolfEntity baby = EntityType.WOLF.create(sw);
         if (baby == null) return;
-
         baby.setBaby(true);
         baby.setTamed(true);
-        baby.refreshPositionAndAngles(
-            dog.getX(), dog.getY(), dog.getZ(),
-            dog.getYaw(), 0
-        );
+        baby.refreshPositionAndAngles(dog.getX(), dog.getY(), dog.getZ(), dog.getYaw(), 0);
         sw.spawnEntity(baby);
-
-        sw.spawnParticles(ParticleTypes.HEART,
-            dog.getX(), dog.getY() + 1.0, dog.getZ(),
-            10, 0.5, 0.5, 0.5, 0.0);
-
+        sw.spawnParticles(ParticleTypes.HEART, dog.getX(), dog.getY() + 1.0, dog.getZ(), 10, 0.5, 0.5, 0.5, 0.0);
         dog.sendMessage(Text.literal("§d🐺 Bir yavru dünyaya geldi!"), false);
     }
-
-    // ── SAHİP UYUYUNCA ────────────────────────────────────────────────────────
 
     private static void checkOwnerSleeping(MinecraftServer server) {
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             if (!DogOriginChecker.isDogPlayer(player)) continue;
             DogData data = DogDataManager.get(player);
             if (!data.isTamed() || data.getOwnerUUID() == null) continue;
-
             ServerPlayerEntity owner = server.getPlayerManager().getPlayer(data.getOwnerUUID());
             if (owner == null) continue;
 
             if (owner.isSleeping() && !data.isSitting()) {
-                // Sahibi uyuyor - köpeği oturt
                 data.setSitting(true);
-                player.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(
-                    net.minecraft.entity.effect.StatusEffects.BLINDNESS,
-                    60, 0, false, false, false
-                ));
                 player.sendMessage(Text.literal("§8Sahibin uyudu, sen de dinleniyorsun..."), true);
                 DogDisguise.refresh(player);
             } else if (!owner.isSleeping() && data.isSitting()) {
-                // Sahibi uyandı - köpeği kaldır (sadece uyuma sebebiyle otururken)
                 data.setSitting(false);
                 player.sendMessage(Text.literal("§7Sahibin uyandı!"), true);
                 DogDisguise.refresh(player);
             }
         }
     }
-
-    // ── YARDIMCI ─────────────────────────────────────────────────────────────
 
     private static void tickLeash(ServerPlayerEntity dog, ServerPlayerEntity owner, DogData data) {
         double anchorX = data.getLeashAnchorX();
@@ -409,9 +365,7 @@ public class DogEventHandler {
                 dog.sendMessage(Text.literal("§cTasman koptu!"), true);
                 return;
             }
-            anchorX = owner.getX();
-            anchorY = owner.getY();
-            anchorZ = owner.getZ();
+            anchorX = owner.getX(); anchorY = owner.getY(); anchorZ = owner.getZ();
             data.setLeashAnchor(anchorX, anchorY, anchorZ);
         }
 
@@ -434,17 +388,12 @@ public class DogEventHandler {
         dog.sendMessage(Text.literal("§7Sahibinin yanına ışınlandın."), true);
     }
 
-    private static void onPlayerDeath(net.minecraft.entity.LivingEntity entity,
-            DamageSource source) {
+    private static void onPlayerDeath(net.minecraft.entity.LivingEntity entity, DamageSource source) {
         if (!(entity instanceof ServerPlayerEntity dead)) return;
         if (!DogOriginChecker.isDogPlayer(dead)) return;
         DogData data = DogDataManager.get(dead);
         if (!data.isTamed() || data.getOwnerUUID() == null) return;
-        ServerPlayerEntity owner = dead.getServer().getPlayerManager()
-            .getPlayer(data.getOwnerUUID());
-        if (owner != null)
-            owner.sendMessage(Text.literal("§c💔 Köpeğin "
-                + dead.getName().getString() + " öldü!"), false);
+        // Ölüm mesajı vanilla sistemden gelecek, özel mesaj yok
     }
 
     private static void playSound(ServerPlayerEntity player,
