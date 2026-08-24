@@ -17,37 +17,44 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ServerPlayNetworkHandler.class)
 public class PlayerHandMixin {
 
-    @Shadow
-    public ServerPlayerEntity player;
+    @Shadow public ServerPlayerEntity player;
 
-    // Blok sağ tık engeli
     @Inject(method = "onPlayerInteractBlock", at = @At("HEAD"), cancellable = true)
     private void blockInteractBlock(PlayerInteractBlockC2SPacket packet, CallbackInfo ci) {
         if (DogOriginChecker.isDogPlayer(player)) ci.cancel();
     }
 
-    // WASD + Space engeli (sadece oturuyorken)
     @Inject(method = "onPlayerMove", at = @At("HEAD"), cancellable = true)
     private void blockMovement(PlayerMoveC2SPacket packet, CallbackInfo ci) {
         if (!DogOriginChecker.isDogPlayer(player)) return;
         DogData data = DogDataManager.get(player);
         if (!data.isSitting()) return;
         if (packet instanceof PlayerMoveC2SPacket.PositionAndOnGround
-            || packet instanceof PlayerMoveC2SPacket.Full) {
-            ci.cancel();
-        }
+            || packet instanceof PlayerMoveC2SPacket.Full) ci.cancel();
     }
 
-    // Tekne/araçtan inme engeli
     @Inject(method = "onClientCommand", at = @At("HEAD"), cancellable = true)
-    private void blockVehicleExit(ClientCommandC2SPacket packet, CallbackInfo ci) {
+    private void blockCommands(ClientCommandC2SPacket packet, CallbackInfo ci) {
         if (!DogOriginChecker.isDogPlayer(player)) return;
-        if (!player.hasVehicle()) return;
-        if (packet.getMode() == ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY) {
+
+        // Tekne inme engeli
+        if (player.hasVehicle() && packet.getMode() == ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY) {
             DogData data = DogDataManager.get(player);
             if (data.isTamed() && data.getOwnerUUID() != null) {
                 ci.cancel();
+                return;
             }
+        }
+
+        // Sneak engeli (çömelme)
+        if (packet.getMode() == ClientCommandC2SPacket.Mode.PRESS_SHIFT_KEY) {
+            ci.cancel();
+            return;
+        }
+
+        // Sprint engeli
+        if (packet.getMode() == ClientCommandC2SPacket.Mode.START_SPRINTING) {
+            ci.cancel();
         }
     }
 }
