@@ -1,7 +1,7 @@
 package com.dogmod.mixin;
 
 import com.dogmod.capability.DogOriginChecker;
-import net.minecraft.network.packet.c2s.play.ChatCommandC2SPacket;
+import net.minecraft.network.packet.c2s.play.CommandExecutionC2SPacket;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -16,10 +16,9 @@ public class PlayerCommandMixin {
 
     @Shadow public ServerPlayerEntity player;
 
-    @Inject(method = "onChatCommand", at = @At("HEAD"), cancellable = true)
-    private void blockCommands(ChatCommandC2SPacket packet, CallbackInfo ci) {
+    @Inject(method = "onCommandExecution", at = @At("HEAD"), cancellable = true)
+    private void blockCommands(CommandExecutionC2SPacket packet, CallbackInfo ci) {
         if (!DogOriginChecker.isDogPlayer(player)) return;
-        // Köpek komut yazamaz
         player.sendMessage(Text.literal("§cKöpekler komut kullanamaz!"), true);
         ci.cancel();
     }
