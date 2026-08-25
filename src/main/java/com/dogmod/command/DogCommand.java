@@ -112,7 +112,6 @@ public class DogCommand {
         player.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.3);
         player.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(4.0);
         player.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_SPEED).setBaseValue(16.0);
-        player.getAttributeInstance(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE).setBaseValue(2.0);
     }
 
     public static void removeDogEffects(ServerPlayerEntity player) {
@@ -120,7 +119,6 @@ public class DogCommand {
         player.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue(0.1);
         player.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_DAMAGE).setBaseValue(1.0);
         player.getAttributeInstance(EntityAttributes.GENERIC_ATTACK_SPEED).setBaseValue(4.0);
-        player.getAttributeInstance(EntityAttributes.PLAYER_ENTITY_INTERACTION_RANGE).setBaseValue(3.0);
     }
 
     public static void updateTabList(ServerPlayerEntity player, DogData data) {
