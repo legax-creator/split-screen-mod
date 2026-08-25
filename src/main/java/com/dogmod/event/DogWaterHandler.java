@@ -66,8 +66,7 @@ public class DogWaterHandler {
         wolf.setInSittingPose(DogDataManager.get(dog).isSitting());
         wolf.setTamed(DogDataManager.get(dog).isTamed());
     
-
-     var dirtyEntries = wolf.getDataTracker().getDirtyEntries();
+      var dirtyEntries = wolf.getDataTracker().getDirtyEntries();
         if (dirtyEntries != null && !dirtyEntries.isEmpty()) {
             for (ServerPlayerEntity observer : world.getServer().getPlayerManager().getPlayerList()) {
                 if (observer == dog) continue;
