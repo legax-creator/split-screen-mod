@@ -13,6 +13,7 @@ import net.minecraft.block.FenceBlock;
 import net.minecraft.block.FenceGateBlock;
 import net.minecraft.block.WallBlock;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.HungerManager;
@@ -59,6 +60,16 @@ public class DogEventHandler {
         UseBlockCallback.EVENT.register(DogEventHandler::onUseBlock);
         ServerTickEvents.END_SERVER_TICK.register(DogEventHandler::onServerTick);
         ServerLivingEntityEvents.AFTER_DEATH.register(DogEventHandler::onPlayerDeath);
+
+        // Yerden eşya alma engeli
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+                if (!DogOriginChecker.isDogPlayer(player)) continue;
+                var attr = player.getAttributeInstance(EntityAttributes.GENERIC_FOLLOW_RANGE);
+                if (attr != null) attr.setBaseValue(0.0);
+            }
+        });
+
         DogMod.LOGGER.info("DogEventHandler kayıt edildi");
     }
 
@@ -76,7 +87,6 @@ public class DogEventHandler {
         if (!data.isTamed() && held.isOf(Items.BONE))
             return tame(interactor, target, data, held);
 
-        // Sahip değilse geç
         if (!data.isTamed() || !data.isOwner(interactor.getUuid()))
             return ActionResult.PASS;
 
@@ -101,13 +111,13 @@ public class DogEventHandler {
             return ActionResult.SUCCESS;
         }
 
-        // Tasma tak/çöz
+        // Tasma
         if (held.isOf(Items.LEAD)) return toggleLeash(interactor, target, data, held);
 
         // Oturma
         if (interactor.isSneaking()) return toggleSit(interactor, target, data);
 
-        // Aşk modu (açlık doluysa ve cooldown bittiyse)
+        // Aşk modu
         if (MEAT_ITEMS.contains(held.getItem()) && data.canBreed()
                 && target.getHungerManager().getFoodLevel() >= 18) {
             return enterLoveMode(interactor, target, data, held);
@@ -167,7 +177,6 @@ public class DogEventHandler {
             String dogName = data.getDogName() != null
                 ? data.getDogName() : dog.getName().getString();
 
-            // Tüm sunucuya duyur
             for (ServerPlayerEntity p : dog.getServer().getPlayerManager().getPlayerList()) {
                 p.sendMessage(Text.literal(
                     "§6🐕 " + dogName + " §a, §e"
@@ -391,9 +400,19 @@ public class DogEventHandler {
     private static void onPlayerDeath(net.minecraft.entity.LivingEntity entity, DamageSource source) {
         if (!(entity instanceof ServerPlayerEntity dead)) return;
         if (!DogOriginChecker.isDogPlayer(dead)) return;
+
         DogData data = DogDataManager.get(dead);
-        if (!data.isTamed() || data.getOwnerUUID() == null) return;
-        // Ölüm mesajı vanilla sistemden gelecek, özel mesaj yok
+        String dogName = data.getDogName() != null
+            ? data.getDogName() : dead.getName().getString();
+
+        // Ölüm mesajını köpek adıyla gönder
+        String causeMsg = source.getDeathMessage(dead).getString();
+        causeMsg = causeMsg.replace(dead.getName().getString(), dogName);
+        final String finalMsg = causeMsg;
+
+        for (ServerPlayerEntity p : dead.getServer().getPlayerManager().getPlayerList()) {
+            p.sendMessage(Text.literal("§c" + finalMsg), false);
+        }
     }
 
     private static void playSound(ServerPlayerEntity player,
