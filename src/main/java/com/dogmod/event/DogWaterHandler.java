@@ -37,7 +37,7 @@ public class DogWaterHandler {
             if (!(dog.getWorld() instanceof ServerWorld sw)) continue;
 
             UUID uuid = dog.getUuid();
-            boolean inWater = dog.isTouchingWater() || dog.isBeingRainedOn();
+            boolean inWater = dog.isTouchingWater() || dog.isWet();
             boolean prev = wasInWater.getOrDefault(uuid, false);
 
             if (inWater != prev) {
@@ -65,9 +65,9 @@ public class DogWaterHandler {
         wolf.setId(dog.getId());
         wolf.setInSittingPose(DogDataManager.get(dog).isSitting());
         wolf.setTamed(DogDataManager.get(dog).isTamed());
-        if (wet) wolf.setInWater(true);
+    
 
-        var dirtyEntries = wolf.getDataTracker().getDirtyEntries();
+     var dirtyEntries = wolf.getDataTracker().getDirtyEntries();
         if (dirtyEntries != null && !dirtyEntries.isEmpty()) {
             for (ServerPlayerEntity observer : world.getServer().getPlayerManager().getPlayerList()) {
                 if (observer == dog) continue;
