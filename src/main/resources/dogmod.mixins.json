@@ -10,9 +10,11 @@
     "PlayerFoodMixin",
     "PlayerChatMixin",
     "PlayerCommandMixin",
-    "PlayerArmorMixin"
+    "PlayerArmorMixin",
+    "OwnerChatMixin"
   ],
   "client": [
-    "ClientHandRenderMixin"
+    "ClientHandRenderMixin",
+    "ClientF3Mixin"
   ]
 }
